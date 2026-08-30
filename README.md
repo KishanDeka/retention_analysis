@@ -145,9 +145,9 @@ This represents the core Data Analyst part of the project.
 
 The project estimates:
 
-\[
+$$
 P(\text{Churn}=1\mid X)
-\]
+$$
 
 using Logistic Regression as the interpretable baseline.
 
@@ -274,12 +274,12 @@ An uplift model answers:
 
 The project estimates customer-level churn reduction as:
 
-\[
+$$
 U_i =
 P(\text{Churn}\mid T=0,X_i)
 -
 P(\text{Churn}\mid T=1,X_i)
-\]
+$$
 
 A positive uplift means the offer is predicted to reduce that customer's churn probability.
 
@@ -294,17 +294,17 @@ The repository currently includes:
 
 The final decision layer combines uplift with customer value and campaign cost.
 
-For customer \(i\):
+For customer $i$:
 
-\[
+$$
 EV_i = U_i \times CLV_i - C_i
-\]
+$$
 
 where:
 
-- \(U_i\) = predicted reduction in churn probability
-- \(CLV_i\) = estimated customer value
-- \(C_i\) = retention-offer cost
+- $U_i$ = predicted reduction in churn probability
+- $CLV_i$ = estimated customer value
+- $C_i$ = retention-offer cost
 
 The basic decision rule is:
 
