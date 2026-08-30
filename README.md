@@ -274,12 +274,7 @@ An uplift model answers:
 
 The project estimates customer-level churn reduction as:
 
-$$
-U_i =
-P(\text{Churn}\mid T=0,X_i)
--
-P(\text{Churn}\mid T=1,X_i)
-$$
+$$ U_i = P(\text{Churn} \mid T=0, X_i) - P(\text{Churn} \mid T=1, X_i) $$
 
 A positive uplift means the offer is predicted to reduce that customer's churn probability.
 
@@ -296,9 +291,7 @@ The final decision layer combines uplift with customer value and campaign cost.
 
 For customer $i$:
 
-$$
-EV_i = U_i \times CLV_i - C_i
-$$
+$$ EV_i = U_i \times CLV_i - C_i $$
 
 where:
 
