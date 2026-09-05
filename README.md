@@ -244,7 +244,7 @@ out-of-sample incremental gain is stable.
 The final decision rule is economic:
 
 $$
-Expected\ Net\ Value_i=\hat{\tau}(x_i)\times Retained\ Customer\ Value_i-Campaign\ Cost_i
+{\rm Expected\ Net\ Value}_i=\hat{\tau}(x_i)\times \rm{Retained\ Customer\ Value}_i-{\rm Campaign\ Cost}_i
 $$
 
 ## Business outputs and insights
@@ -352,14 +352,6 @@ This README intentionally does not hard-code model scores or campaign lift.
 Execute the SQL scripts and notebooks, then report the generated metrics and
 figures. This prevents portfolio claims from drifting away from reproducible
 outputs.
-
-## Resume summary
-
-> Built an end-to-end telecom retention decision workflow combining PostgreSQL
-> analytics, Power BI segmentation, PCA validation, comparative churn modeling,
-> SHAP explanations, randomized A/B testing, and uplift-based campaign targeting.
-> Translated churn risk and treatment effects into profit-aware retention
-> priorities using held-out validation.
 
 ## Data attribution
 
