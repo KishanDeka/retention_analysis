@@ -1,452 +1,372 @@
-# Telecom Customer Retention Analytics
+# Customer Retention Decision Analytics
 
-An end-to-end analytics project for understanding customer churn, predicting churn risk, evaluating retention offers with Bayesian A/B testing, estimating customer-level treatment response, and optimizing retention targeting based on expected profit.
+**PostgreSQL · Power BI · PCA · Machine Learning · SHAP · A/B Testing · Uplift Modeling**
 
-The project combines:
+An end-to-end telecom retention project that connects descriptive analytics,
+churn prediction, model explanation, randomized experimentation, and
+profit-aware campaign targeting.
 
-- SQL
-- Python
-- scikit-learn
-- XGBoost / LightGBM
-- Bayesian statistics
-- SHAP explainability
-- uplift modeling
-- Power BI-ready reporting
+The project answers five business questions:
 
----
+1. Where are churn and revenue exposure concentrated?
+2. Which customers are most likely to churn?
+3. Does PCA improve validation performance enough to justify its use?
+4. Does a retention intervention causally reduce churn?
+5. Which customers should be targeted to maximize expected incremental value?
 
-## Business Problem
+> The two datasets represent complementary stages of a retention workflow.
+> Their customer rows are not joined.
 
-A telecom company wants to reduce customer churn without offering discounts to everyone.
+## Decision framework
 
-The project answers four questions:
-
-1. Which customers are most likely to churn?
-2. What factors are driving churn?
-3. Does a retention offer reduce churn?
-4. Which customers should receive the offer to maximize expected profit?
-
----
-
-## Project Workflow
-
-```text
-Raw Customer Data
-        ↓
-SQL Cleaning & Analysis
-        ↓
-EDA & Customer Segmentation
-        ↓
-PCA / Correlation Analysis
-        ↓
-Churn Prediction
-        ↓
-SHAP Interpretability
-        ↓
-Bayesian A/B Testing
-        ↓
-Uplift / Treatment Effect Modeling
-        ↓
-Expected Profit Optimization
-        ↓
-Power BI Reporting
+```mermaid
+flowchart TD
+    A["IBM Telco data"] --> B["SQL analytics and Power BI"]
+    A --> C["Churn prediction and SHAP"]
+    D["Orange randomized campaign"] --> E["A/B test and uplift"]
+    B --> F["Retention decision"]
+    C --> F
+    E --> F
 ```
 
----
-
-## Repository Structure
-
-```text
-telco-retention-analytics/
-│
-├── README.md
-├── requirements.txt
-├── pyproject.toml
-│
-├── data/
-│   ├── generate_demo_data.py
-│   ├── raw/
-│   ├── interim/
-│   └── processed/
-│
-├── sql/
-│   ├── 01_create_tables.sql
-│   ├── 02_data_cleaning.sql
-│   ├── 03_churn_analysis.sql
-│   ├── 04_customer_segments.sql
-│   └── 05_experiment_analysis.sql
-│
-├── notebooks/
-│   ├── 01_eda.ipynb
-│   ├── 02_churn_drivers.ipynb
-│   ├── 03_pca_analysis.ipynb
-│   ├── 04_churn_model.ipynb
-│   ├── 05_bayesian_ab_test.ipynb
-│   └── 06_uplift_analysis.ipynb
-│
-├── src/
-│   ├── features.py
-│   ├── models.py
-│   ├── causal.py
-│   └── decision.py
-│
-├── powerbi/
-│   └── README.md
-│
-├── reports/
-│   └── figures/
-│
-└── tests/
-```
-
----
+Churn probability answers **who may leave**. Uplift answers **whose behavior
+may change because of treatment**. A high-risk customer is not automatically a
+valuable campaign target.
 
 ## Data
 
-The main churn dataset is the **IBM Telco Customer Churn** dataset.
+Raw data are not committed to the repository. Download the files and place
+them in `data/raw/`.
 
-Expected file:
+| Dataset | Local filename | Used for | Source |
+|---|---|---|---|
+| IBM Telco Customer Churn 11.1.3+ | `telco_customer_churn.csv` | SQL analytics, Power BI, customer segments, PCA, churn models, SHAP | [IBM dataset description](https://community.ibm.com/community/user/blogs/steven-macko/2019/07/11/telco-customer-churn-1113) · [Kaggle download mirror](https://www.kaggle.com/datasets/ylchang/telco-customer-churn-1113) |
+| Orange Belgium Churn Uplift | `churn_uplift_anonymized.csv` | Randomized A/B testing, T-learner uplift, Qini evaluation, campaign value | [Authors' benchmark repository and download](https://github.com/TheoVerhelst/Churn-Uplift-Dataset-Paper) · [Associated paper](https://arxiv.org/abs/2312.07206) |
+
+IBM describes its sample as a fictional California telecom company with 7,043
+customers and interpretable demographic, service, financial, satisfaction,
+churn, and customer-lifetime-value fields. The Orange Belgium dataset contains
+anonymized covariates, a binary treatment indicator `t`, and a binary churn
+outcome `y` from a real retention-campaign setting.
+
+The datasets are used separately:
+
+- **IBM Telco:** business interpretation and churn-risk prediction.
+- **Orange Belgium:** causal campaign evaluation and treatment-aware targeting.
+
+## Repository structure
 
 ```text
-data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv
+customer-retention-analytics/
+├── README.md
+├── requirements.txt
+├── data/
+│   └── raw/
+│       ├── telco_customer_churn.csv
+│       └── churn_uplift_anonymized.csv
+├── sql/
+│   ├── 00_load_raw_data.sql
+│   └── 01_clean_orange_campaign.sql
+├── src/
+│   ├── __init__.py
+│   ├── data.py
+│   ├── models.py
+│   ├── churn.py
+│   └── experiment.py
+├── notebooks/
+│   ├── 01_telco_eda_segments.ipynb
+│   ├── 02_churn_models_pca.ipynb
+│   ├── 03_shap_interpretation.ipynb
+│   └── 04_ab_testing_uplift.ipynb
+├── outputs/
+│   ├── figures/
+│   └── *.csv
+├── powerbi/
+│   └── customer_retention_dashboard.pbix
+└── tests/
+    ├── test_data.py
+    ├── test_churn.py
+    └── test_experiment.py
 ```
 
-The IBM dataset does not contain a randomized retention campaign.
+Reusable logic belongs in `src/`. The notebooks contain analysis,
+visualization, and interpretation rather than duplicate implementations.
+Earlier `features.py`, `causal.py`, and `decision.py` modules are no longer
+needed: their retained functionality is consolidated into `churn.py`,
+`models.py`, and `experiment.py`.
 
-For Bayesian A/B testing and uplift modeling, the project therefore includes a synthetic treatment/control experiment generated with:
+## Python modules
+
+| Module | Responsibility |
+|---|---|
+| `src/data.py` | Load the SQL-cleaned Telco and Orange tables and validate their minimum schemas |
+| `src/models.py` | Shared preprocessing and individual logistic, PCA-logistic, random-forest, gradient-boosting, XGBoost, and LightGBM definitions |
+| `src/churn.py` | Business features, leakage protection, cross-validation, holdout scoring, PCA comparison, permutation importance, and SHAP helpers |
+| `src/experiment.py` | Frequentist and Bayesian A/B tests, T-learner uplift, optional causal forest, Qini analysis, targeting policies, and profit calculations |
+
+SQL remains the source of truth for ingestion, type conversion, blank-to-null
+handling, constraints, and load validation. Python performs only analytical
+feature preparation and modeling.
+
+## Required SQL schema contract
+
+The notebooks expect these PostgreSQL objects:
+
+| Object | Required fields |
+|---|---|
+| `public.customer_retention` | `customer_id`, `churn_value`, `tenure_in_months`, `monthly_charge`; `cltv`, `contract`, and `premium_tech_support` are used when available |
+| `public.orange_campaign` | `campaign_row_id`, `t`, `y`, plus campaign covariates such as `pc1`–`pc160` and `factor1`–`factor18` |
+
+Keep these names consistent in SQL rather than adding a second cleaning or
+renaming layer in Python. In particular, older IBM extracts sometimes use
+`tenure_months`, `monthly_charges`, and `tech_support`; alias or rename them in
+the SQL output to the contract above.
+
+## Setup
+
+Python 3.11 is recommended.
 
 ```bash
-python data/generate_demo_data.py
-```
-
-This allows the full analytical workflow to run without making unsupported causal claims from the IBM dataset.
-
----
-
-## SQL Analysis
-
-The SQL layer covers:
-
-- customer and subscription tables
-- data-quality checks
-- overall churn rate
-- churn by contract type
-- churn by tenure
-- churn by payment method
-- revenue at risk
-- customer risk segments
-- treatment vs. control experiment metrics
-
-This represents the core Data Analyst part of the project.
-
----
-
-## Churn Prediction
-
-The project estimates:
-
-$$
-P(\text{Churn}=1\mid X)
-$$
-
-using Logistic Regression as the interpretable baseline.
-
-Optional models include:
-
-- XGBoost
-- LightGBM
-
-Evaluation metrics include:
-
-- ROC-AUC
-- Precision-Recall AUC
-- Brier Score
-
-The output is a customer-level churn probability that can be used to create Low, Medium, and High risk segments.
-
----
-
-## SHAP Interpretability
-
-SHAP is used to explain the churn model and answer:
-
-> Why is this customer predicted to churn?
-
-For the tree-based models, SHAP can provide both global and individual explanations.
-
-### Global interpretation
-
-Use a SHAP summary plot to identify the most influential churn drivers.
-
-Typical variables to examine include:
-
-- contract type
-- tenure
-- monthly charges
-- technical support
-- payment method
-- internet service
-
-Example:
-
-```python
-import shap
-
-explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(X_test)
-
-shap.summary_plot(shap_values, X_test)
-```
-
-This helps answer questions such as:
-
-> Which factors contribute most strongly to churn predictions across the customer base?
-
-### Individual customer interpretation
-
-SHAP can also explain why a particular customer received a high churn score.
-
-For example:
-
-```text
-Customer C001
-Predicted churn probability: 78%
-
-Main contributors:
-+ Month-to-month contract
-+ Low tenure
-+ High monthly charges
-+ No technical support
-- Automatic payment
-```
-
-This makes the model easier to discuss with business stakeholders.
-
-Recommended outputs:
-
-```text
-reports/figures/shap_summary.png
-reports/figures/shap_bar.png
-reports/figures/shap_customer_example.png
-```
-
-SHAP should be used for **model interpretation**, not interpreted as causal evidence.
-
----
-
-## Bayesian A/B Testing
-
-A simulated retention experiment compares:
-
-```text
-Control
-    → no retention offer
-
-Treatment
-    → retention offer
-```
-
-For each group, churn probability is modeled with a Beta distribution.
-
-The project estimates:
-
-```text
-Probability treatment reduces churn
-Expected absolute churn reduction
-95% credible interval
-Expected campaign profit
-Probability campaign is profitable
-```
-
-This provides a more decision-focused interpretation than reporting only a p-value.
-
----
-
-## Uplift Modeling
-
-A churn model answers:
-
-> Who is likely to leave?
-
-An uplift model answers:
-
-> Whose churn probability is likely to decrease because of the retention offer?
-
-The project estimates customer-level churn reduction as:
-
-$$ U_i = P(\text{Churn} \mid T=0, X_i) - P(\text{Churn} \mid T=1, X_i) $$
-
-A positive uplift means the offer is predicted to reduce that customer's churn probability.
-
-The repository currently includes:
-
-- T-Learner uplift estimation
-- optional EconML Causal Forest implementation
-
----
-
-## Financial Targeting
-
-The final decision layer combines uplift with customer value and campaign cost.
-
-For customer $i$:
-
-$$ EV_i = U_i \times CLV_i - C_i $$
-
-where:
-
-- $U_i$ = predicted reduction in churn probability
-- $CLV_i$ = estimated customer value
-- $C_i$ = retention-offer cost
-
-The basic decision rule is:
-
-```text
-Target customer if Expected Value > 0
-```
-
-This avoids targeting customers purely because they have high churn risk.
-
----
-
-## Power BI
-
-The project exports:
-
-```text
-data/processed/powerbi_customer_retention.csv
-```
-
-using:
-
-```bash
-python scripts_export_powerbi.py
-```
-
-Recommended Power BI pages:
-
-### 1. Executive Overview
-
-- total customers
-- churn rate
-- monthly revenue
-- revenue at risk
-- high-risk customers
-
-### 2. Churn Drivers
-
-- churn by contract
-- churn by tenure
-- churn by payment method
-- churn by technical support
-- customer risk segments
-
-### 3. Retention Campaign
-
-- control churn rate
-- treatment churn rate
-- expected churn reduction
-- customers targeted
-- campaign cost
-- expected campaign profit
-
----
-
-## Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/YOUR_USERNAME/telco-retention-analytics.git
-cd telco-retention-analytics
-```
-
-Create a virtual environment:
-
-```bash
-python -m venv .venv
-```
-
-Activate it:
-
-```bash
+python3.11 -m venv .venv
 source .venv/bin/activate
-```
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Generate demo data:
+Create the PostgreSQL database from the repository root:
 
 ```bash
-python data/generate_demo_data.py
+createdb customer_retention
+
+psql -U "$USER" -d customer_retention \
+  -f sql/00_load_raw_data.sql
+
+psql -U "$USER" -d customer_retention \
+  -f sql/01_clean_orange_campaign.sql
 ```
 
-Run tests:
+Set the connection string:
 
 ```bash
-pytest
+export DATABASE_URL="postgresql+psycopg://USER:PASSWORD@localhost/customer_retention"
 ```
 
-Start Jupyter:
+Confirm the database contract:
+
+```sql
+SELECT COUNT(*) FROM customer_retention;
+SELECT COUNT(*) FROM orange_campaign;
+
+SELECT customer_id, churn_value, tenure_in_months, monthly_charge
+FROM customer_retention
+LIMIT 5;
+
+SELECT campaign_row_id, t, y
+FROM orange_campaign
+LIMIT 5;
+```
+
+## Run the analysis
+
+Start Jupyter from the repository root:
 
 ```bash
-jupyter notebook
+jupyter lab
 ```
 
----
+Run the notebooks in order:
 
-## Notebook Order
+| Notebook | Main output |
+|---|---|
+| `01_telco_eda_segments.ipynb` | Churn KPIs, customer segments, and revenue exposure |
+| `02_churn_models_pca.ipynb` | Cross-validated model leaderboard, PCA validation, calibration, and customer churn scores |
+| `03_shap_interpretation.ipynb` | Global and customer-level model explanations |
+| `04_ab_testing_uplift.ipynb` | A/B effect, Bayesian uncertainty, uplift deciles, Qini curve, and targeting profit |
 
-Run:
+Each notebook loads data through `src.data`. The notebooks export the loaded SQL
+tables and derived results to `outputs/` for reproducibility and Power BI.
+
+## Churn modeling methodology
+
+The churn workflow uses a stratified train/holdout split. Models are compared
+with five-fold stratified cross-validation only inside the training partition;
+the selected model is evaluated once on the untouched holdout set.
+
+Default comparison:
+
+- Logistic regression
+- Logistic regression with PCA on numeric predictors
+- Random forest
+- Histogram gradient boosting
+
+XGBoost and LightGBM builders are also available in `src/models.py` and can be
+added to the default registry.
+
+Model selection emphasizes:
+
+- **PR-AUC:** primary ranking metric for the minority churn class.
+- **ROC-AUC:** supporting overall ranking metric.
+- **Brier score and calibration:** quality of churn probabilities.
+- **Precision and recall:** operational performance at a chosen threshold.
+
+PCA is retained only if it provides measurable cross-validated benefit,
+improved stability, or useful compression. Similar performance favors the
+non-PCA model because original features are easier to interpret.
+
+Post-outcome and externally generated fields are excluded from model inputs,
+including `churn_label`, `customer_status`, `churn_reason`, `churn_category`,
+and IBM's precomputed `churn_score`.
+
+## Experiment and uplift methodology
+
+The Orange workstream first estimates the average randomized treatment effect:
+
+$$
+ATE=P(Y=1\mid T=0)-P(Y=1\mid T=1)
+$$
+
+A positive value means treatment reduced churn. The A/B report contains group
+sizes, churn rates, absolute and relative reduction, a 95% confidence interval,
+a two-proportion z-test, number needed to treat, and a Bayesian probability
+that treatment is beneficial.
+
+The T-learner then estimates customer-level churn reduction:
+
+$$
+\hat{\tau}(x)=\hat{P}(Y=1\mid T=0,X=x)-\hat{P}(Y=1\mid T=1,X=x)
+$$
+
+Uplift performance is evaluated on held-out customers using uplift deciles, a
+Qini-style curve, and policy comparisons against churn-risk and random
+targeting. A complex targeting policy should only be adopted when its
+out-of-sample incremental gain is stable.
+
+The final decision rule is economic:
+
+$$
+Expected\ Net\ Value_i=\hat{\tau}(x_i)\times Retained\ Customer\ Value_i-Campaign\ Cost_i
+$$
+
+## Business outputs and insights
+
+The project turns model outputs into decisions rather than stopping at model
+accuracy.
+
+| Analysis | Business interpretation | Decision supported |
+|---|---|---|
+| Churn and revenue by segment | A segment can have high churn but limited financial exposure, or moderate churn with substantial value at risk | Prioritize segments using both churn and value |
+| Calibrated churn probability | Customers can be ranked by expected risk instead of a hard yes/no label | Allocate finite retention capacity |
+| PCA validation | Dimensionality reduction is useful only if it improves validation or stability | Retain interpretability when PCA adds no measurable benefit |
+| SHAP explanations | Predictive signals explain why a customer receives a high score | Design testable onboarding, support, contract, or pricing hypotheses |
+| Randomized A/B effect | Treatment-control differences estimate whether the campaign works on average | Decide whether the intervention merits continued investment |
+| Uplift and Qini | High-risk customers are not always the customers whose behavior treatment changes | Target persuadable customers rather than risk alone |
+| Expected incremental value | Statistical uplift is translated using customer value and campaign cost | Select a profitable targeting threshold |
+
+SHAP describes model associations; it does not establish that changing a
+feature will prevent churn. Causal claims are restricted to the randomized
+Orange campaign analysis.
+
+## Figures for the GitHub README
+
+Keep the final README focused. Four figures are enough and should be saved from
+the executed notebooks to `outputs/figures/`.
+
+| Priority | Figure | Suggested path | Why it belongs in the README |
+|---:|---|---|---|
+| 1 | Segment churn rate and revenue at risk | `outputs/figures/01_segment_value_risk.png` | Strongest link between descriptive analysis and a retention decision |
+| 2 | Cross-validated PR-AUC/ROC-AUC plus PCA benefit | `outputs/figures/02_model_pca_comparison.png` | Demonstrates rigorous model selection and whether PCA added value |
+| 3 | SHAP global summary or beeswarm | `outputs/figures/03_shap_summary.png` | Shows that the selected churn model is interpretable |
+| 4 | Qini curve or campaign profit by target fraction | `outputs/figures/04_uplift_policy_value.png` | Demonstrates the transition from prediction to causal, profit-aware targeting |
+
+Optional fifth figure: the control-versus-treatment churn-rate plot with a 95%
+confidence interval. Include it only if the A/B result remains readable at
+GitHub width.
+
+After generating the files, place the four figures immediately after the
+relevant Results paragraphs using relative links, for example:
+
+```markdown
+![Segment churn and revenue at risk](outputs/figures/01_segment_value_risk.png)
+```
+
+Do not publish figures with invented example values. Run the notebooks, save
+the actual plots, and report the resulting metrics beside them.
+
+## Power BI
+
+Recommended report pages:
+
+1. **Executive overview:** customers, churn rate, revenue at risk, and filters.
+2. **Segments and drivers:** churn by contract, tenure, service, and business segment.
+3. **Model and campaign decisions:** model performance, scored customers, A/B effect, uplift deciles, and policy value.
+
+Primary dashboard inputs are generated under `outputs/`:
 
 ```text
-01_eda.ipynb
-02_churn_drivers.ipynb
-03_pca_analysis.ipynb
-04_churn_model.ipynb
-05_shap_interpretability.ipynb
-06_bayesian_ab_test.ipynb
-07_uplift_analysis.ipynb
+customer_retention_sql.csv
+customer_segment_summary.csv
+model_leaderboard.csv
+pca_validation.csv
+customer_churn_scores.csv
+shap_global_importance.csv
+orange_campaign_sql.csv
+ab_test_summary.csv
+bayesian_ab_summary.csv
+uplift_customer_scores.csv
+uplift_deciles.csv
+campaign_policy_results.csv
+uplift_threshold_optimization.csv
 ```
 
----
+Label IBM and Orange visuals clearly because they represent separate customer
+populations.
 
-## Main Skills Demonstrated
+## Tests
 
-| Area | Skills |
-|---|---|
-| Analytics | SQL, EDA, KPIs, segmentation |
-| Statistics | Bayesian inference, correlation, PCA |
-| Machine Learning | Logistic Regression, XGBoost, LightGBM |
-| Interpretability | SHAP |
-| Experimentation | Bayesian A/B testing |
-| Causal Analytics | Uplift modeling, treatment effects |
-| Business | churn, CLV, campaign ROI, targeting |
-| Reporting | Power BI |
+Run all tests from the repository root:
 
----
+```bash
+pytest -q
+```
 
-## Key Idea
+The tests should cover database-schema validation, churn leakage protection,
+model construction, PCA comparison, A/B calculations, holdout uplift scoring,
+Qini output, and policy reproducibility.
 
-The project separates four different analytical questions:
+## Limitations
 
-| Question | Method |
-|---|---|
-| Who is likely to churn? | Churn prediction |
-| Why is the model predicting churn? | SHAP |
-| Does the campaign work? | Bayesian A/B testing |
-| Who should receive the offer? | Uplift + expected profit |
+- IBM Telco has no randomized treatment assignment and cannot support causal
+  retention claims.
+- Orange covariates are anonymized, limiting feature-level business
+  interpretation.
+- Orange campaign conclusions apply to the experiment population and should not
+  automatically be generalized to all IBM Telco customers.
+- Individual uplift estimates are noisy and require honest holdout validation.
+- Profit estimates depend on explicit customer-value and campaign-cost assumptions.
+- A targeting policy selected offline should be validated in a new prospective
+  experiment before production use.
 
-The goal is not simply to create the most accurate churn classifier.
+## Reproducibility note
 
-The goal is to build a practical retention decision system that connects customer analytics, statistical inference, model interpretation, and financial outcomes.
+This README intentionally does not hard-code model scores or campaign lift.
+Execute the SQL scripts and notebooks, then report the generated metrics and
+figures. This prevents portfolio claims from drifting away from reproducible
+outputs.
+
+## Resume summary
+
+> Built an end-to-end telecom retention decision workflow combining PostgreSQL
+> analytics, Power BI segmentation, PCA validation, comparative churn modeling,
+> SHAP explanations, randomized A/B testing, and uplift-based campaign targeting.
+> Translated churn risk and treatment effects into profit-aware retention
+> priorities using held-out validation.
+
+## Data attribution
+
+- IBM Cognos Analytics Samples Team, *Telco customer churn (11.1.3+)*.
+- Verhelst, T., Mercier, D., Shrestha, J., and Bontempi, G., *A churn
+  prediction dataset from the telecom sector: a new benchmark for uplift
+  modeling*, arXiv:2312.07206.
+
+Dataset terms remain governed by their respective sources. Do not redistribute
+raw data unless the source license permits it.
